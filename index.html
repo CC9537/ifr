@@ -1,0 +1,611 @@
+<!--
+
+jQuery Flight Indicators plugin
+By Sébastien Matton (seb_matton@hotmail.com)
+Published under GPLv3 License.
+
+https://github.com/sebmatton/jQuery-Flight-Indicators
+
+-->
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.3/js/tether.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.3/css/tether.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ"
+        crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ"
+        crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn"
+        crossorigin="anonymous"></script>
+    <!-- Flight Indicators library styles -->
+    <link rel="stylesheet" type="text/css" href="css/flightindicators.css" />
+    <title>IFR Scan Builder</title>
+</head>
+
+<body>
+    <section class="instrument-section">
+        <div class="row">
+            <div class="col-lg-2 ml-5">
+                <button type="button" onclick="pause()" id="pause" class="">Pause</button>
+                <button type="button" onclick="resume()" id="resume" class="invisible">Resume</button>
+            </div>
+        </div>
+
+        <div class="row mt-1 ml-5">
+            <div class="col-lg-4">
+                <span id="airspeed"></span>
+            </div>
+            <div class="col-lg-4">
+                <span id="attitude"></span>
+            </div>
+            <div class="col-lg-4">
+                <span id="altimeter"></span>
+            </div>
+        </div>
+        <div class="row mt-5 ml-5">
+            <div class="col-lg-4">
+                <span id="turn_coordinator"></span>
+            </div>
+            <div class="col-lg-4">
+                <span id="heading"></span>
+            </div>
+            <div class="col-lg-4">
+                <span id="variometer"></span>
+            </div>
+        </div>
+        <div class="row m-5">
+            <div class="col-lg-2">
+                <button type="button" onclick="fix_airspeed()">Air Speed</button>
+            </div>
+            <div class="col-lg-2">
+                <button type="button" onclick="fix_attitude()">Attitude Indicator</button>
+            </div>
+            <div class="col-lg-2">
+                <button type="button" onclick="fix_altitude()">Altimeter</button>
+            </div>
+            <div class="col-lg-2">
+                <button type="button" onclick="fix_vsi()">VSI</button>
+            </div>
+            <div class="col-lg-2">
+                <button type="button" onclick="fix_heading()">Heading</button>
+            </div>
+            <div class="col-lg-2">
+                <button type="button" onclick="fix_turn()">Turn Coordinator</button>
+            </div>
+        </div>
+        </div>
+    </section>
+    Seconds:
+    <span id="seconds"></span>
+    <br/>
+    <span id="status"></span>
+    <br/>
+    <br/>
+
+    <footer>
+        <div class="row ml-5">
+            <div class="col-lg-6">
+                <input type="checkbox" id="train" value="true"> Training Boxes
+                <br/>
+                <input type="radio" name="scan_type" value="circle" checked> Circular
+                <br>
+                <input type="radio" name="scan_type" value="v"> V - Inverted V
+                <br>
+            </div>
+            <div class="col-lg-6">
+                <p>Set Instrument Defaults:
+                    <br/> (Pause before changing. Changes when you click the instrument or resume.)</p>Airspeed
+                <input type="text"
+                    id="c_airspeed" value="75" size="5" onchange="set_airspeed();"> (0-160)
+                <br/>Attitude Pitch
+                <input type="text" id="c_pitch" value="0" size="5" onchange="set_attitude();"> (-25 - 25)
+                <br/>Attitude Roll
+                <input type="text" id="c_roll" value="0" size="5" onchange="set_attitude();"> (-90 - 90)
+                <br/>Altimeter
+                <input type="text" id="c_altitude" value="3000" size="5" onchange="set_altitude();"> (0 - 25,000)
+                <br/>Heading
+                <input type="text" id="c_heading" value="45" size="5" onchange="set_heading();"> (0 - 359)
+                <br/>
+                <br/>
+            </div>
+
+    </footer>
+
+    <!-- Importing the FlightIndicators library -->
+    <script src="js/jquery.flightindicators.js"></script>
+
+    <!-- Let start our scripts -->
+    <script type="text/javascript">
+        // Dynamic examples
+        var attitude = $.flightIndicator('#attitude', 'attitude', { roll: 0, pitch: 0, size: 200, showBox: true });
+        var heading = $.flightIndicator('#heading', 'heading', { heading: 150, showBox: true });
+        var variometer = $.flightIndicator('#variometer', 'variometer', { vario: -5, showBox: true });
+        var airspeed = $.flightIndicator('#airspeed', 'airspeed', { showBox: false });
+        var altimeter = $.flightIndicator('#altimeter', 'altimeter');
+        var turn_coordinator = $.flightIndicator('#turn_coordinator', 'turn_coordinator', { turn: 0 });
+
+        var current_airspeed = 90;
+        var airspeed_changing = false;
+        var next_airspeed = 90;
+        var airspeed_change_began = 0;
+        set_airspeed();
+
+        function set_airspeed() {
+            current_airspeed = parseFloat(document.getElementById('c_airspeed').value);
+            next_airspeed = parseFloat(document.getElementById('c_airspeed').value);
+            airspeed.setAirSpeed(current_airspeed);
+            airspeed_changing = false;
+            airspeed_change_began = 0;
+        }
+
+        var current_attitude_roll = 0;
+        var current_attitude_pitch = 0;
+        var next_attitude_roll = 0;
+        var next_attitude_pitch = 0;
+        var attitude_changing = false;
+        var attitude_change_began = 0;
+        set_attitude();
+
+        function set_attitude() {
+            current_attitude_roll = parseFloat(document.getElementById('c_roll').value);
+            current_attitude_pitch = parseFloat(document.getElementById('c_pitch').value);
+            next_attitude_roll = parseFloat(document.getElementById('c_roll').value);
+            next_attitude_pitch = parseFloat(document.getElementById('c_pitch').value);
+            attitude_changing = false;
+            attitude_change_began = 0;
+            attitude.setRoll(current_attitude_roll);
+            attitude.setPitch(current_attitude_pitch);
+        }
+
+        var current_heading = 0;
+        var heading_changing = false;
+        var next_heading = 0;
+        var heading_change_began = 0;
+        set_heading();
+
+        function set_heading() {
+            current_heading = parseFloat(document.getElementById('c_heading').value);
+            next_heading = parseFloat(document.getElementById('c_heading').value);
+            heading_changing = false;
+            heading_change_began = 0;
+            heading.setHeading(current_heading);
+        }
+
+        var current_altitude = 4500;
+        var altitude_changing = false;
+        var next_altitude = 4500;
+        var altitude_change_began = 0;
+        set_altitude();
+
+        function set_altitude() {
+            current_altitude = parseFloat(document.getElementById('c_altitude').value);
+            next_altitude = parseFloat(document.getElementById('c_altitude').value);
+            altitude_changing = false;
+            altitude_change_began = 0;
+            altimeter.setAltitude(current_altitude);
+        }
+
+        var current_vsi = 0;
+        var vsi_changing = false;
+        var next_vsi = 0;
+        var vsi_change_began = 0;
+
+        var current_turn_coor = 0;
+        var turn_coor_changing = false;
+        var next_turn_coor = 0;
+        var turn_coor_change_began = 0;
+
+
+
+        var frame = 0;
+        var second = 0;
+        var scan_timer = 0;
+        var current_scan_instrument = 0;
+        var scan_type = "circular";
+
+        var seconds_until_next_control_moves = (Math.floor(Math.random() * 12) + 1);
+        var next_control_to_move = 0;
+
+        function pick_next_control() {
+            next_control_to_move = (Math.floor(Math.random() * 6) + 1);
+            if (next_control_to_move == 1 && airspeed_changing) {
+                next_control_to_move = (Math.floor(Math.random() * 6) + 1);
+            }
+            if (next_control_to_move == 2 && attitude_changing) {
+                next_control_to_move = (Math.floor(Math.random() * 6) + 1);
+            }
+            if (next_control_to_move == 3 && altitude_changing) {
+                next_control_to_move = (Math.floor(Math.random() * 6) + 1);
+            }
+            if (next_control_to_move == 4 && vsi_changing) {
+                next_control_to_move = (Math.floor(Math.random() * 6) + 1);
+            }
+            if (next_control_to_move == 5 && heading_changing) {
+                next_control_to_move = (Math.floor(Math.random() * 6) + 1);
+            }
+            if (next_control_to_move == 6 && turn_coor_changing) {
+                next_control_to_move = (Math.floor(Math.random() * 6) + 1);
+            }
+            seconds_until_next_control_moves = (Math.floor(Math.random() * 12) + 1);
+        }
+
+        function move_airspeed() {
+            var airspeed_to_move = (Math.floor(Math.random() * 34) + 5);
+            var direction = Math.round(Math.random());
+            if (direction == 0) { next_airspeed = current_airspeed - airspeed_to_move }
+            else { next_airspeed = current_airspeed + airspeed_to_move }
+            if (current_airspeed.toFixed(0) == next_airspeed.toFixed(0)) { airspeed_changing = false; }
+        }
+
+        function move_attitude() {
+            var attitude_pitch_to_move = (Math.floor(Math.random() * 15) + 5);
+            var pitch_direction = Math.round(Math.random());
+            var attitude_roll_to_move = (Math.floor(Math.random() * 25) + 5);
+            var roll_direction = Math.round(Math.random());
+            if (pitch_direction == 0) { next_attitude_pitch = current_attitude_pitch - attitude_pitch_to_move; }
+            else { next_attitude_pitch = current_attitude_pitch + attitude_pitch_to_move; }
+            if (roll_direction == 0) { next_attitude_roll = current_attitude_roll - attitude_roll_to_move; }
+            else { next_attitude_roll = current_attitude_roll + attitude_roll_to_move; }
+            if (current_attitude_roll.toFixed(0) == next_attitude_roll && current_attitude_pitch == next_attitude_pitch) { attitude_changing = false; }
+        }
+
+        function move_altitude() {
+            var altitude_to_move = (Math.floor(Math.random() * 250) + 50);
+            var altitude_direction = Math.round(Math.random());
+            if (altitude_direction == 0) { next_altitude = current_altitude - altitude_to_move; }
+            else { next_altitude = current_altitude + altitude_to_move; }
+            if (current_altitude.toFixed(0) == next_altitude.toFixed(0)) { altitude_changing = false; }
+        }
+
+        function move_vsi() {
+            var vsi_to_move = (Math.floor(Math.random() * 3) + 1) / 2;
+            var vsi_direction = Math.round(Math.random());
+            if (vsi_direction == 0) { next_vsi = current_vsi - vsi_to_move; }
+            else { next_vsi = current_vsi + vsi_to_move; }
+            if (current_vsi.toFixed(1) == next_vsi.toFixed(1)) { vsi_changing = false; }
+        }
+
+        function move_heading() {
+            var heading_to_move = (Math.floor(Math.random() * 300) + 15);
+            var heading_direction = Math.round(Math.random());
+            if (heading_direction == 0) { next_heading = current_heading - heading_to_move; }
+            else { next_heading = current_heading + heading_to_move; }
+            if (current_heading.toFixed(1) == next_heading.toFixed(1)) { heading_changing = false; }
+        }
+
+        function move_turn_coor() {
+            var turn_coor_to_move = (Math.floor(Math.random() * 15) + 15);
+            var turn_coor_direction = Math.round(Math.random());
+            if (turn_coor_direction == 0) { next_turn_coor = current_turn_coor - turn_coor_to_move; }
+            else { next_turn_coor = current_turn_coor + turn_coor_to_move; }
+            if (current_turn_coor.toFixed(1) == next_turn_coor.toFixed(1)) { turn_coor_changing = false; }
+        }
+
+        function fail() {
+            if (Math.abs(current_airspeed - document.getElementById('c_airspeed').value) > 10) {
+                alert("FAIL - Airspeed - More than 10 knots off. Click 'Close' to correct.")
+                fix_airspeed();
+            }
+            if (airspeed_change_began > 0 && (second - airspeed_change_began) > 12) {
+                airspeed_change_began = airspeed_change_began + 3;
+                alert("Fail - Airspeed - More than 10 seconds passed without correcting airspeed.")
+            }
+            if (attitude_change_began > 0 && (second - attitude_change_began) > 12) {
+                attitude_change_began = attitude_change_began + 3;
+                alert("FAIL - Attitude - More than 10 seconds passed without correcting attitude.")
+            }
+            if (Math.abs(current_altitude - parseFloat(document.getElementById('c_altitude').value)) > 100) {
+                alert("FAIL - Altitude - More than 100 feet off. Click 'Close' to correct.")
+                fix_altitude();
+            }
+            if (vsi_change_began > 0 && (second - vsi_change_began) > 12) {
+                vsi_change_began = vsi_change_began + 3;
+                alert("FAIL - VSI - More than 10 seconds passed without correcting VSI.")
+            }
+            if (Math.abs(current_heading - parseFloat(document.getElementById('c_heading').value)) > 30) {
+                alert("FAIL - Heading - More than 30 degrees off. Click 'Close' to correct.")
+                fix_heading();
+            }
+            if (turn_coor_change_began > 0 && (second - turn_coor_change_began) > 12) {
+                turn_coor_change_began = turn_coor_change_began + 3;
+                alert("FAIL - Turn Coordinator - More than 10 seconds passed without correcting turn coordinator.")
+            }
+        }
+
+        function scan_to_next_instrument() {
+            current_scan_instrument++;
+            if (current_scan_instrument > 6) {
+                current_scan_instrument = 1;
+            }
+            var scantypes = document.getElementsByName('scan_type');
+
+            for (var i = 0, length = scantypes.length; i < length; i++) {
+                if (scantypes[i].checked) {
+                    // do whatever you want with the checked radio
+                    scan_type = scantypes[i].value;
+                }
+            }
+
+            if (scan_type == "circle") {
+                if (current_scan_instrument == 1) {
+                    $(".airspeed").addClass("red-border");
+                } else { $(".airspeed").removeClass("red-border"); }
+
+                if (current_scan_instrument == 2) {
+                    $(".attitude").addClass("red-border");
+                } else { $(".attitude").removeClass("red-border"); }
+
+                if (current_scan_instrument == 3) {
+                    $(".altimeter").addClass("red-border");
+                } else { $(".altimeter").removeClass("red-border"); }
+
+                if (current_scan_instrument == 4) {
+                    $(".vario").addClass("red-border");
+                } else { $(".vario").removeClass("red-border"); }
+
+                if (current_scan_instrument == 5) {
+                    $(".heading").addClass("red-border");
+                } else { $(".heading").removeClass("red-border"); }
+
+                if (current_scan_instrument == 6) {
+                    $(".turn_coordinator").addClass("red-border");
+                } else { $(".turn_coordinator").removeClass("red-border"); }
+            }
+
+            if (scan_type == "v") {
+                if (current_scan_instrument == 1) {
+                    $(".airspeed").addClass("red-border");
+                } else { $(".airspeed").removeClass("red-border"); }
+
+                if (current_scan_instrument == 2) {
+                    $(".heading").addClass("red-border");
+                } else { $(".heading").removeClass("red-border"); }
+
+                if (current_scan_instrument == 3) {
+                    $(".altimeter").addClass("red-border");
+                } else { $(".altimeter").removeClass("red-border"); }
+
+                if (current_scan_instrument == 4) {
+                    $(".vario").addClass("red-border");
+                } else { $(".vario").removeClass("red-border"); }
+
+                if (current_scan_instrument == 5) {
+                    $(".attitude").addClass("red-border");
+                } else { $(".attitude").removeClass("red-border"); }
+
+                if (current_scan_instrument == 6) {
+                    $(".turn_coordinator").addClass("red-border");
+                } else { $(".turn_coordinator").removeClass("red-border"); }
+            }
+        }
+
+        function repeatOften() {
+            // Do whatever
+            // frame = ((frame + 100/6));
+            frame++;
+            scan_timer++;
+            //code executes every frame (runs 60 times per second)
+            if (airspeed_changing) {
+                var airspeed_difference = current_airspeed - next_airspeed;
+                current_airspeed = current_airspeed - ((airspeed_difference / 60) / 12);
+            }
+
+            if (attitude_changing) {
+                var pitch_difference = current_attitude_pitch - next_attitude_pitch;
+                var roll_difference = current_attitude_roll - next_attitude_roll;
+                current_attitude_pitch = current_attitude_pitch - ((pitch_difference / 60) / 6);
+                current_attitude_roll = current_attitude_roll - ((roll_difference / 60) / 6);
+            }
+
+            if (altitude_changing) {
+                var altitude_difference = current_altitude - next_altitude;
+                var time_to_change = altitude_difference / 8
+                current_altitude = current_altitude - ((altitude_difference / 60) / time_to_change);
+            }
+
+            if (vsi_changing) {
+                var vsi_difference = current_vsi - next_vsi;
+                current_vsi = current_vsi - ((vsi_difference / 60) / 2)
+            }
+
+            if (heading_changing) {
+                var heading_difference = current_heading - next_heading;
+                var time_to_change = heading_difference / 3
+                current_heading = current_heading - ((heading_difference / 60) / time_to_change)
+            }
+
+            if (turn_coor_changing) {
+                var turn_coor_difference = current_turn_coor - next_turn_coor;
+                current_turn_coor = current_turn_coor - ((turn_coor_difference / 60) / 3)
+            }
+
+            if (scan_timer > 90) {
+                scan_timer = 0;
+                if (document.getElementById('train').checked) {
+                    scan_to_next_instrument();
+                }
+                else {
+                    $(".airspeed").removeClass("red-border");
+                    $(".altitude").removeClass("red-border");
+                    $(".altimeter").removeClass("red-border");
+                    $(".vario").removeClass("red-border");
+                    $(".turn_coordinator").removeClass("red-border");
+                    $(".heading").removeClass("red-border");
+                }
+            }
+
+            if (frame > 60) {
+                frame = 0;
+                //Code below executes every second
+                second++;
+                seconds_until_next_control_moves--;
+
+                if (seconds_until_next_control_moves == 0) {
+                    pick_next_control();
+
+                    if (next_control_to_move == 1) {
+                        airspeed_changing = true;
+                        airspeed_change_began = second;
+                        move_airspeed();
+                    }
+
+
+                    if (next_control_to_move == 2) {
+                        attitude_changing = true;
+                        attitude_change_began = second;
+                        move_attitude();
+                    }
+
+
+                    if (next_control_to_move == 3) {
+                        altitude_changing = true;
+                        altitude_change_began = second;
+                        move_altitude();
+                    }
+
+
+                    if (next_control_to_move == 4) {
+                        vsi_changing = true;
+                        vsi_change_began = second;
+                        move_vsi();
+                    }
+
+
+                    if (next_control_to_move == 5) {
+                        heading_changing = true;
+                        heading_change_began = second;
+                        move_heading();
+                    }
+
+
+                    if (next_control_to_move == 6) {
+                        turn_coor_changing = true;
+                        turn_coor_change_began = second;
+                        move_turn_coor();
+                    }
+                }
+
+
+                fail();
+
+
+            }
+
+
+
+            airspeed.setAirSpeed(current_airspeed);
+            attitude.setRoll(current_attitude_roll);
+            attitude.setPitch(current_attitude_pitch);
+            altimeter.setAltitude(current_altitude);
+            heading.setHeading(current_heading);
+            variometer.setVario(current_vsi);
+            turn_coordinator.setTurn(current_turn_coor);
+
+
+
+
+            $('#seconds').text(parseFloat(second).toFixed(0));
+            $('#next_control_to_move').text(next_control_to_move);
+            $('#seconds_until_next_control_moves').text(seconds_until_next_control_moves);
+
+            if ($("#status").text() != "Paused") {
+                requestAnimationFrame(repeatOften);
+            }
+        }
+
+
+        requestAnimationFrame(repeatOften);
+
+        function pause() {
+            $("#pause").addClass("invisible");
+            $("#resume").removeClass("invisible");
+            $("#status").text("Paused");
+        }
+
+        function resume() {
+            $("#pause").removeClass("invisible");
+            $("#resume").addClass("invisible");
+            $("#status").text("");
+            requestAnimationFrame(repeatOften);
+        }
+
+        function fix_airspeed() {
+            if (current_airspeed.toFixed(0) == document.getElementById('c_airspeed').value) {
+                alert("FAIL - Airspeed was correct");
+            } else {
+                airspeed_changing = false;
+                airspeed_change_began = 0;
+                set_airspeed();
+            }
+
+        }
+
+        function fix_attitude() {
+            if (current_attitude_roll.toFixed(0) == 0 && current_attitude_roll.toFixed(0) == 0) {
+                alert("FAIL - Attitude was correct");
+            } else {
+                current_attitude_roll = parseFloat(document.getElementById('c_roll').value);
+                current_attitude_pitch = parseFloat(document.getElementById('c_pitch').value);
+                next_attitude_roll = parseFloat(document.getElementById('c_roll').value);
+                next_attitude_pitch = parseFloat(document.getElementById('c_pitch').value);
+                attitude_changing = false;
+                attitude_change_began = 0;
+                set_attitude();
+            }
+
+        }
+
+        function fix_altitude() {
+            if (current_altitude.toFixed(0) == parseFloat(document.getElementById('c_roll').value)) {
+                alert("FAIL - Altitude was correct");
+            } else {
+                current_altitude = parseFloat(document.getElementById('c_altitude').value);
+                altitude_changing = false;
+                next_altitude = parseFloat(document.getElementById('c_altitude').value);
+                altitude_change_began = 0;
+                set_altitude();
+            }
+        }
+
+        function fix_vsi() {
+            current_vsi = 0;
+            vsi_changing = false;
+            next_vsi = 0;
+            vsi_change_began = 0;
+        }
+
+
+        function fix_heading() {
+            if (current_heading.toFixed(0) == 0) {
+                alert("FAIL - Heading was correct");
+            } else {
+                current_heading = parseFloat(document.getElementById('c_heading').value);
+                heading_changing = false;
+                next_heading = parseFloat(document.getElementById('c_heading').value);
+                heading_change_began = 0;
+            }
+        }
+
+        function fix_turn() {
+            if (current_turn_coor.toFixed(0) == 0) {
+                alert("FAIL - Turn Coordinator was correct");
+            } else {
+                current_turn_coor = 0;
+                turn_coor_changing = false;
+                next_turn_coor = 0;
+                turn_coor_change_began = 0;
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>
